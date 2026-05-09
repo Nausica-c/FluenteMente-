@@ -1,0 +1,61 @@
+name: Build & Deploy Lingue-Fluente
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # 1. PRENDI CODICE
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. PYTHON
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 3. ROOT PYTHONPATH (IMPORT FIX)
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
+
+      # 4. DIPENDENZE MINIME
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+
+      # 5. 🏗️ BUILD SITO (CORE)
+      - name: Build site
+        run: python scripts/build_site.py
+
+      # 6. 🏠 GENERA INDEX (HOME PAGE)
+      - name: Generate index
+        run: python scripts/generate_index.py
+
+      # 7. 🔍 DEBUG (VEDERE OUTPUT)
+      - name: Debug output
+        run: |
+          echo "=== ROOT ==="
+          ls -R
+          echo "=== POSTS ==="
+          ls -R _posts || echo "_posts non trovato"
+          echo "=== SITE ==="
+          ls -R _site || echo "_site non trovato"
+
+      # 8. 🌍 DEPLOY SU GITHUB PAGES
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_site
